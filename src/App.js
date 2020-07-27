@@ -13,51 +13,52 @@ function App() {
   const [country, setCountry] = useState('Worldwide');
   const [countryInfo, setCountryInfo] = useState({});
   const [tableData, setTableData] = useState([]);
-  const [mapCenter, setMapCenter] = useState({lat: 34.80746, lng: -40.4796});
+  const [mapCenter, setMapCenter] = useState({ lat: 34.80746, lng: -40.4796});
   const [mapZoom, setMapZoom] = useState(3)
+  const [mapCountries, setMapCountries] = useState([]);
 
   useEffect( ()=> {
     fetch('https://disease.sh/v3/covid-19/all')
     .then( (response) => response.json())
     .then((data) => {
       setCountryInfo(data);
-    })
-  }, [])
+    });
+  }, []);
 
   useEffect( ()=> {
-    //async -> send a request, wait for it , do something whit it
     const getCountriesData = async () => {
       await fetch("https://disease.sh/v3/covid-19/countries")
       .then((response) => response.json())
       .then((data) => {
-        const countries = data.map((country)=> ({
+        const countries = data.map((country) => ({
           name: country.country,
           value: country.countryInfo.iso2,
         }));
         const sortedData = sortData(data);
         setTableData(sortedData);
+        setMapCountries(data);
         setCountries(countries);
-      })
-    }
+      });
+    };
     getCountriesData();
   }, []);
 
   const onCountryChange =  async (event) => {
     const countryCode = event.target.value;
-    setCountry(countryCode);
+    
      const url = countryCode === 'worldwide' 
      ? 'https://disease.sh/v3/covid-19/all' 
      : `https://disease.sh/v3/covid-19/countries/${countryCode}` 
     await fetch(url)
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       setCountry(countryCode)
-      //All of the data...
-      //from the country response
       setCountryInfo(data)
+      setMapCenter([data.countryInfo.lat, data.countryInfo.long])
+      setMapZoom(4)
     });
   };
-  console.log( countryInfo)
+  
   
 
   return (
@@ -92,6 +93,7 @@ function App() {
           total={countryInfo.deaths}/>
         </div>
         <Map 
+          countries={mapCountries}
           center={mapCenter} 
           zoom={mapZoom}/>
       </div>
@@ -100,9 +102,8 @@ function App() {
           <h3>Live Cases by Country</h3>
           <Table countries={tableData}/>
           <h3>Woldwide new cases</h3>
-          
           <LineGraph/>
-        </CardContent>        
+        </CardContent>          
       </Card>
     </div>
   );
